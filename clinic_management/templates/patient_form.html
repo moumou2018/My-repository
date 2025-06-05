@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Edit Patient' if patient_id else 'Add New Patient' }}</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="text"], textarea { width: calc(100% - 22px); padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; }
+        textarea { height: 100px; }
+        .form-actions { text-align: right; }
+        button { padding: 10px 15px; background-color: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button[type="button"] { background-color: #6c757d; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ 'Edit Patient' if patient_id else 'Add New Patient' }}</h1>
+        <form id="patientForm">
+            <input type="hidden" id="patientId" value="{{ patient_id if patient_id else '' }}">
+
+            <div>
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div>
+                <label for="date_of_birth">Date of Birth (YYYY-MM-DD):</label>
+                <input type="text" id="date_of_birth" name="date_of_birth">
+            </div>
+
+            <div>
+                <label for="phone_number">Phone Number:</label>
+                <input type="text" id="phone_number" name="phone_number">
+            </div>
+
+            <div>
+                <label for="medical_history_summary">Medical History Summary:</label>
+                <textarea id="medical_history_summary" name="medical_history_summary"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">Save Patient</button>
+                <button type="button" onclick="window.location.href='/view_patients'">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const patientId = document.getElementById('patientId').value;
+        const form = document.getElementById('patientForm');
+        const apiBaseUrl = '/api'; // Assuming API is served from the same origin under /api
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (patientId) { // If patientId is present, we are in "edit" mode
+                document.title = 'Edit Patient ' + patientId;
+                fetch(\`\${apiBaseUrl}/patients/\${patientId}\`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Patient not found');
+                        }
+                        return response.json();
+                    })
+                    .then(patient => {
+                        document.getElementById('name').value = patient.name;
+                        document.getElementById('date_of_birth').value = patient.date_of_birth || '';
+                        document.getElementById('phone_number').value = patient.phone_number || '';
+                        document.getElementById('medical_history_summary').value = patient.medical_history_summary || '';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching patient details:', error);
+                        alert('Error loading patient data: ' + error.message);
+                        form.innerHTML = '<p>Could not load patient data.</p>';
+                    });
+            } else {
+                document.title = 'Add New Patient';
+            }
+        });
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = {
+                name: document.getElementById('name').value,
+                date_of_birth: document.getElementById('date_of_birth').value,
+                phone_number: document.getElementById('phone_number').value,
+                medical_history_summary: document.getElementById('medical_history_summary').value
+            };
+
+            let url = \`\${apiBaseUrl}/patients\`;
+            let method = 'POST';
+
+            if (patientId) { // Editing existing patient
+                url = \`\${apiBaseUrl}/patients/\${patientId}\`;
+                method = 'PUT';
+            }
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.message || 'Save operation failed') });
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('Patient ' + (patientId ? 'updated' : 'added') + ' successfully!');
+                window.location.href = '/view_patients'; // Redirect to patient list
+            })
+            .catch(error => {
+                console.error('Error saving patient:', error);
+                alert('Error saving patient: ' + error.message);
+            });
+        });
+    </script>
+</body>
+</html>

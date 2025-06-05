@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patients List</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .actions a { margin-right: 10px; }
+        .add-button { margin-bottom: 20px; padding: 10px 15px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;}
+    </style>
+</head>
+<body>
+    <h1>Patients</h1>
+    <a href="/add_patient" class="add-button">Add New Patient</a>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Date of Birth</th>
+                <th>Phone Number</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="patientTableBody">
+            <!-- Patient data will be loaded here by JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/patients')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('patientTableBody');
+                    if (data.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="5">No patients found.</td></tr>';
+                        return;
+                    }
+                    data.forEach(patient => {
+                        const row = tableBody.insertRow();
+                        row.insertCell().textContent = patient.id;
+                        row.insertCell().textContent = patient.name;
+                        row.insertCell().textContent = patient.date_of_birth || 'N/A';
+                        row.insertCell().textContent = patient.phone_number || 'N/A';
+                        const actionsCell = row.insertCell();
+                        actionsCell.className = 'actions';
+                        actionsCell.innerHTML = \`
+                            <a href="/edit_patient/\${patient.id}">Edit</a>
+                            <a href="#" onclick="deletePatient(\${patient.id}, this); return false;">Delete</a>
+                        \`;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching patients:', error);
+                    const tableBody = document.getElementById('patientTableBody');
+                    tableBody.innerHTML = '<tr><td colspan="5">Error loading patients.</td></tr>';
+                });
+        });
+
+        function deletePatient(patientId, linkElement) {
+            if (!confirm(\`Are you sure you want to delete patient ID \${patientId}?\`)) {
+                return;
+            }
+            fetch(\`/api/patients/\${patientId}\`, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok) {
+                        // Remove row from table
+                        linkElement.closest('tr').remove();
+                        alert('Patient deleted successfully.');
+                    } else {
+                        response.json().then(data => alert('Error deleting patient: ' + (data.message || 'Unknown error')));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting patient:', error);
+                    alert('Error deleting patient.');
+                });
+        }
+    </script>
+</body>
+</html>
