@@ -1,0 +1,5 @@
+AppointmentID,PatientID,Date,Time,Reason
+1,1,2024-08-01,10:00,Routine Checkup
+2,2,2024-08-01,11:00,Follow-up
+3,1,2024-08-01,10:00,Routine Checkup
+4,2,2024-08-01,11:00,Follow-up
